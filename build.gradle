@@ -1,0 +1,182 @@
+plugins {
+    id "java"
+    id "maven-publish"
+    id "checkstyle"
+    id "jacoco"
+    id "signing"
+    id "org.embulk.embulk-plugins" version "0.5.5"
+}
+
+repositories {
+    mavenCentral()
+}
+
+group = "com.treasuredata.embulk.plugins"
+description = "Encryption data for Output Plugin"
+version = "0.1.0"
+
+def embulkVersion = '0.11.5'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+    withJavadocJar()
+    withSourcesJar()
+}
+
+dependencies {
+    compileOnly "org.embulk:embulk-api:0.10.32"
+    compileOnly "org.embulk:embulk-spi:0.10.32"
+
+    implementation('org.embulk:embulk-util-config:0.3.2') {
+        // Conflict with Embulk Core
+        exclude group: 'com.fasterxml.jackson.core', module: 'jackson-annotations'
+        exclude group: 'com.fasterxml.jackson.core', module: 'jackson-core'
+        exclude group: 'com.fasterxml.jackson.core', module: 'jackson-databind'
+        exclude group: 'com.fasterxml.jackson.datatype', module: 'jackson-datatype-jdk8'
+        exclude group: 'javax.validation', module: 'validation-api'
+    }
+
+    implementation "org.embulk:embulk-util-json:0.1.1"
+    implementation "org.embulk:embulk-util-text:0.1.1"
+    implementation "org.embulk:embulk-util-timestamp:0.2.1"
+
+    // Explicit dependencies for embulk-util-* that matches with Embulk
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.6.7'
+    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.6.7'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.6.7'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.6.7'
+    implementation 'javax.validation:validation-api:1.1.0.Final'
+    implementation 'org.apache.bval:bval-jsr303:0.5'
+    implementation 'org.embulk:embulk-base-restclient:0.10.1'
+    implementation 'org.embulk:embulk-util-retryhelper-jetty94:0.9.0'
+
+    implementation 'com.google.guava:guava:18.0'
+    implementation "com.google.code.findbugs:annotations:3.0.1"
+    implementation 'org.apache.commons:commons-lang3:3.12.0'
+    implementation "javax.xml.bind:jaxb-api:2.2.11"
+    implementation "com.sun.xml.bind:jaxb-core:2.2.11"
+    implementation "com.sun.xml.bind:jaxb-impl:2.2.11"
+    implementation "javax.activation:activation:1.1.1"
+    implementation 'org.bouncycastle:bcprov-jdk18on:1.82'
+
+    testImplementation "junit:junit:4.+"
+    testImplementation "org.embulk:embulk-core:0.10.32:tests"
+    testImplementation "org.embulk:embulk-junit4:0.10.32"
+    testImplementation "org.embulk:embulk-deps:0.10.32"
+    testImplementation "org.mockito:mockito-core:2.+"
+}
+
+embulkPlugin {
+    mainClass = "org.embulk.encryption.PGPFileEncoderPlugin"
+    category = "encoder"
+    type = "encryption"
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId = project.group
+            artifactId = project.name
+
+            from components.java  // Must be "components.java". The dependency modification works only for it.
+            // javadocJar and sourcesJar are added by java.withJavadocJar() and java.withSourcesJar() above.
+            // See: https://docs.gradle.org/current/javadoc/org/gradle/api/plugins/JavaPluginExtension.html
+
+            pom {  // https://central.sonatype.org/pages/requirements.html
+                packaging "jar"
+
+                name = project.name
+                description = project.description
+                url = "https://www.embulk.org/"
+
+                licenses {
+                    license {
+                        // http://central.sonatype.org/pages/requirements.html#license-information
+                        name = "MIT License"
+                        url = "http://www.opensource.org/licenses/mit-license.php"
+                    }
+                }
+
+                developers {
+                    developer {
+                        name = "Hiep To"
+                        email = "tanhiep2012003@gmail.com"
+                    }
+                }
+
+                scm {
+                    connection = "scm:git@github.com:TanHiep-To/embulk-encoder-encryption.git"
+                    developerConnection = "scm:git@github.com:TanHiep-To/embulk-encoder-encryption.git"
+                    url = "https://github.com/TanHiep-To/embulk-encoder-encryption/"
+                }
+            }
+        }
+    }
+
+    repositories {
+        maven {  // publishMavenPublicationToMavenCentralRepository
+            name = "mavenCentral"
+            if (project.version.endsWith("-SNAPSHOT")) {
+                url "https://oss.sonatype.org/content/repositories/snapshots"
+            } else {
+                url "https://oss.sonatype.org/service/local/staging/deploy/maven2"
+            }
+
+            credentials {
+                username = project.hasProperty("ossrhUsername") ? ossrhUsername : ""
+                password = project.hasProperty("ossrhPassword") ? ossrhPassword : ""
+            }
+        }
+    }
+}
+
+signing {
+    sign publishing.publications.maven
+}
+
+gem {
+    authors = ["Hiep To"]
+    email = ["tanhiep2012003@gmail.com"]
+    summary = "PGP Encryption plugin for Embulk"
+    homepage = "https://github.com/TanHiep-To/embulk-encoder-encryption"
+    licenses = ["MIT"]
+}
+
+gemPush {
+    host = "https://rubygems.org"
+}
+
+javadoc {
+    options {
+        locale = 'en_US'
+        encoding = 'UTF-8'
+    }
+}
+
+checkstyle {
+    configFile = file("${project.rootDir}/config/checkstyle/checkstyle.xml")
+    toolVersion = '6.14.1'
+}
+checkstyleMain {
+    configFile = file("${project.rootDir}/config/checkstyle/default.xml")
+    ignoreFailures = true
+}
+checkstyleTest {
+    configFile = file("${project.rootDir}/config/checkstyle/default.xml")
+    ignoreFailures = true
+}
+task checkstyle(type: Checkstyle) {
+    classpath = sourceSets.main.output + sourceSets.test.output
+    source = sourceSets.main.allJava + sourceSets.test.allJava
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.required = true
+        csv.required = false
+        html.required = true
+        html.outputLocation.set(layout.buildDirectory.dir("reports/coverage"))
+    }
+}
