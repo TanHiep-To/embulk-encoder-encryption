@@ -15,11 +15,12 @@ group = "com.treasuredata.embulk.plugins"
 description = "Encryption data for Output Plugin"
 version = "0.1.0"
 
-def embulkVersion = '0.11.5'
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+def embulkVersion = '0.10.41'
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
     withJavadocJar()
     withSourcesJar()
 }
@@ -58,7 +59,10 @@ dependencies {
     implementation "com.sun.xml.bind:jaxb-core:2.2.11"
     implementation "com.sun.xml.bind:jaxb-impl:2.2.11"
     implementation "javax.activation:activation:1.1.1"
-    implementation 'org.bouncycastle:bcprov-jdk18on:1.82'
+    implementation 'org.bouncycastle:bcprov-jdk18on:1.72'
+    implementation 'org.bouncycastle:bcpkix-jdk18on:1.72'
+    implementation 'org.bouncycastle:bcpg-jdk18on:1.72'
+
 
     testImplementation "junit:junit:4.+"
     testImplementation "org.embulk:embulk-core:0.10.32:tests"
